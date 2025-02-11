@@ -2,37 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Snake Game with Sounds</title>
+    <title>Snake Game with Sounds and Touch Controls</title>
     <style>
         body {
             background-color: #000;
             margin: 0;
             overflow: hidden;
+            height: 100vh; /* Full height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         canvas {
-            display: block;
-            margin: 0 auto;
             background-color: #111;
+            display: block;
+            width: 100vw; /* Full width */
+            height: 100vh; /* Full height */
         }
         h1 {
             color: #fff;
             text-align: center;
             font-family: Arial, sans-serif;
             margin-top: 20px;
+            position: absolute;
+            top: 20px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
     <h1>Snake Game</h1>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
         // Get the canvas element and context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
+        // Set canvas size to full screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
         // Load background image
         const backgroundImage = new Image();
-        backgroundImage.src = 'https://i.natgeofe.com/n/9135ca87-0115-4a22-8caf-d1bdef97a814/75552.jpg'; // Replace with your image URL or leave blank for no image
+        backgroundImage.src = 'cat.jpg'; // Background image
 
         // Load sound effects
         const meowSound = new Audio('meow.mp3');     // Level up sound
@@ -40,10 +52,11 @@
 
         // Game variables
         const gridSize = 20;
-        const tileCount = canvas.width / gridSize;
+        const tileCountX = Math.floor(canvas.width / gridSize);
+        const tileCountY = Math.floor(canvas.height / gridSize);
 
         let snake = [
-            { x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }
+            { x: Math.floor(tileCountX / 2), y: Math.floor(tileCountY / 2) }
         ];
         let velocity = { x: 0, y: 0 };
         let foods = []; // Array to hold two food items
@@ -63,12 +76,8 @@
             setTimeout(() => {
                 requestAnimationFrame(gameLoop);
 
-                // Draw background image or clear canvas
-                if (backgroundImage.src) {
-                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
-                } else {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                }
+                // Draw background image
+                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
                 // Move Snake
                 const head = {
@@ -78,8 +87,8 @@
 
                 // Game Over Conditions
                 if (
-                    head.x < 0 || head.x >= tileCount ||
-                    head.y < 0 || head.y >= tileCount ||
+                    head.x < 0 || head.x >= tileCountX ||
+                    head.y < 0 || head.y >= tileCountY ||
                     snake.some((segment, index) => index !== 0 && segment.x === head.x && segment.y === head.y)
                 ) {
                     gameOver = true;
@@ -132,8 +141,8 @@
             let newX, newY;
             // Ensure food doesn't spawn on the snake or other food items
             do {
-                newX = Math.floor(Math.random() * tileCount);
-                newY = Math.floor(Math.random() * tileCount);
+                newX = Math.floor(Math.random() * tileCountX);
+                newY = Math.floor(Math.random() * tileCountY);
             } while (
                 snake.some(segment => segment.x === newX && segment.y === newY) ||
                 foods.some(food => food.x === newX && food.y === newY)
@@ -216,7 +225,7 @@
 
         function resetGame() {
             snake = [
-                { x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }
+                { x: Math.floor(tileCountX / 2), y: Math.floor(tileCountY / 2) }
             ];
             velocity = { x: 0, y: 0 };
             score = 0;
@@ -226,44 +235,27 @@
             gameLoop();
         }
 
-
+        // Touch controls
         canvas.addEventListener('touchstart', function(event) {
+            const touchX = event.touches[0].clientX; // Get the X position of the touch
+            const touchY = event.touches[0].clientY; // Get the Y position of the touch
 
-    const touchY = event.touches[0].clientY; // Get the Y position of the touch
+            // Determine the direction based on touch position
+            if (touchY < canvas.height / 3) {
+                // Touch at the top third of the screen
+                changeDirection({ key: 'w' });
+            } else if (touchY > canvas.height * 2 / 3) {
+                // Touch at the bottom third of the screen
+                changeDirection({ key: 's' });
+            } else if (touchX < canvas.width / 3) {
+                // Touch at the left third of the screen
+                changeDirection({ key: 'a' });
+            } else if (touchX > canvas.width * 2 / 3) {
+                // Touch at the right third of the screen
+                changeDirection({ key: 'd' });
+            }
+        });
 
-    const touchX = event.touches[0].clientX; // Get the X position of the touch
-
-
-    // Determine the direction based on touch position
-
-    if (touchY < canvas.height / 3) {
-
-        // Touch at the top third of the screen
-
-        changeDirection({ key: 'w' });
-
-    } else if (touchY > canvas.height * 2 / 3) {
-
-        // Touch at the bottom third of the screen
-
-        changeDirection({ key: 's' });
-
-    } else if (touchX < canvas.width / 3) {
-
-        // Touch at the left third of the screen
-
-        changeDirection({ key: 'a' });
-
-    } else if (touchX > canvas.width * 2 / 3) {
-
-        // Touch at the right third of the screen
-
-        changeDirection({ key: 'd' });
-
-    }
-
-});
-        
         // Event listener for key presses
         document.addEventListener('keydown', changeDirection);
 
