@@ -226,6 +226,44 @@
             gameLoop();
         }
 
+
+        canvas.addEventListener('touchstart', function(event) {
+
+    const touchY = event.touches[0].clientY; // Get the Y position of the touch
+
+    const touchX = event.touches[0].clientX; // Get the X position of the touch
+
+
+    // Determine the direction based on touch position
+
+    if (touchY < canvas.height / 3) {
+
+        // Touch at the top third of the screen
+
+        changeDirection({ key: 'w' });
+
+    } else if (touchY > canvas.height * 2 / 3) {
+
+        // Touch at the bottom third of the screen
+
+        changeDirection({ key: 's' });
+
+    } else if (touchX < canvas.width / 3) {
+
+        // Touch at the left third of the screen
+
+        changeDirection({ key: 'a' });
+
+    } else if (touchX > canvas.width * 2 / 3) {
+
+        // Touch at the right third of the screen
+
+        changeDirection({ key: 'd' });
+
+    }
+
+});
+        
         // Event listener for key presses
         document.addEventListener('keydown', changeDirection);
 
