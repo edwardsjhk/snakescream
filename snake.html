@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake Game with Sounds</title>
+    <style>
+        body {
+            background-color: #000;
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #111;
+        }
+        h1 {
+            color: #fff;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script>
+        // Get the canvas element and context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Load background image
+        const backgroundImage = new Image();
+        backgroundImage.src = 'https://i.natgeofe.com/n/9135ca87-0115-4a22-8caf-d1bdef97a814/75552.jpg'; // Replace with your image URL or leave blank for no image
+
+        // Load sound effects
+        const meowSound = new Audio('meow.mp3');     // Level up sound
+        const screamSound = new Audio('scream.mp3'); // Game over sound
+
+        // Game variables
+        const gridSize = 20;
+        const tileCount = canvas.width / gridSize;
+
+        let snake = [
+            { x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }
+        ];
+        let velocity = { x: 0, y: 0 };
+        let foods = []; // Array to hold two food items
+        let gameOver = false;
+        let score = 0;
+        let speed = 10; // Initial speed of the game
+
+        // Place the initial food items
+        placeFoods();
+
+        function gameLoop() {
+            if (gameOver) {
+                drawGameOver();
+                return;
+            }
+
+            setTimeout(() => {
+                requestAnimationFrame(gameLoop);
+
+                // Draw background image or clear canvas
+                if (backgroundImage.src) {
+                    ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+                } else {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                }
+
+                // Move Snake
+                const head = {
+                    x: snake[0].x + velocity.x,
+                    y: snake[0].y + velocity.y
+                };
+
+                // Game Over Conditions
+                if (
+                    head.x < 0 || head.x >= tileCount ||
+                    head.y < 0 || head.y >= tileCount ||
+                    snake.some((segment, index) => index !== 0 && segment.x === head.x && segment.y === head.y)
+                ) {
+                    gameOver = true;
+                    screamSound.play();
+                    drawGameOver();
+                    return;
+                }
+
+                snake.unshift(head); // Add the new head
+
+                // Check if snake eats any food
+                let ateFood = false;
+                for (let i = 0; i < foods.length; i++) {
+                    if (head.x === foods[i].x && head.y === foods[i].y) {
+                        score++;
+                        ateFood = true;
+
+                        // Increase speed every 5 points
+                        if (score % 5 === 0) {
+                            speed += speed * 0.2; // Increase speed by 20%
+                            meowSound.play();     // Play meow sound on level up
+                        }
+
+                        // Place a new food item
+                        placeSingleFood(i);
+                        break; // Exit the loop since we found the food eaten
+                    }
+                }
+
+                if (!ateFood) {
+                    // Remove the tail segment only if no food eaten
+                    snake.pop();
+                }
+
+                drawFoods();
+                drawSnake();
+                drawScore();
+
+            }, 1000 / speed);
+        }
+
+        function placeFoods() {
+            foods = [];
+            for (let i = 0; i < 2; i++) {
+                placeSingleFood();
+            }
+        }
+
+        function placeSingleFood(index) {
+            let newX, newY;
+            // Ensure food doesn't spawn on the snake or other food items
+            do {
+                newX = Math.floor(Math.random() * tileCount);
+                newY = Math.floor(Math.random() * tileCount);
+            } while (
+                snake.some(segment => segment.x === newX && segment.y === newY) ||
+                foods.some(food => food.x === newX && food.y === newY)
+            );
+            const newFood = { x: newX, y: newY };
+            if (index !== undefined) {
+                // Replace the food at the specified index
+                foods[index] = newFood;
+            } else {
+                // Add a new food item
+                foods.push(newFood);
+            }
+        }
+
+        function drawFoods() {
+            ctx.fillStyle = 'red';
+            foods.forEach(food => {
+                ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+            });
+        }
+
+        function drawSnake() {
+            ctx.fillStyle = 'blue'; // Snake color
+            snake.forEach(segment => {
+                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
+            });
+        }
+
+        function drawScore() {
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText('Score: ' + score, 10, 20);
+        }
+
+        function drawGameOver() {
+            ctx.fillStyle = 'white';
+            ctx.font = '40px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+            ctx.font = '20px Arial';
+            ctx.fillText('Press Enter to Restart', canvas.width / 2, canvas.height / 2 + 40);
+        }
+
+        function changeDirection(event) {
+            const keyPressed = event.key.toLowerCase();
+            const goingUp = velocity.y === -1;
+            const goingDown = velocity.y === 1;
+            const goingRight = velocity.x === 1;
+            const goingLeft = velocity.x === -1;
+
+            switch (keyPressed) {
+                case 'a':
+                    if (!goingRight) {
+                        velocity = { x: -1, y: 0 };
+                    }
+                    break;
+                case 'w':
+                    if (!goingDown) {
+                        velocity = { x: 0, y: -1 };
+                    }
+                    break;
+                case 'd':
+                    if (!goingLeft) {
+                        velocity = { x: 1, y: 0 };
+                    }
+                    break;
+                case 's':
+                    if (!goingUp) {
+                        velocity = { x: 0, y: 1 };
+                    }
+                    break;
+                case 'enter':
+                    if (gameOver) {
+                        resetGame();
+                    }
+                    break;
+            }
+        }
+
+        function resetGame() {
+            snake = [
+                { x: Math.floor(tileCount / 2), y: Math.floor(tileCount / 2) }
+            ];
+            velocity = { x: 0, y: 0 };
+            score = 0;
+            gameOver = false;
+            speed = 10; // Reset the speed
+            placeFoods();
+            gameLoop();
+        }
+
+        // Event listener for key presses
+        document.addEventListener('keydown', changeDirection);
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
